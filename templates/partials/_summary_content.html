@@ -1,0 +1,71 @@
+<div id="summary-content">
+    {% if summary and summary.sections %}
+        {% for section in summary.sections %}
+        <div class="card">
+            <h2>{{ section.topic }}</h2>
+
+            {% if section.has_corrections %}
+            <p style="color: var(--accent-orange); font-family: var(--font-mono); font-size: 12px; margin-bottom: 16px;">
+                ⚠️ This section contains corrections
+            </p>
+            {% endif %}
+
+            {% for claim in section.claims %}
+            <div class="claim-item {{ 'verified' if claim.user_facing_status.value == 'LIKELY_FINE' else ('misleading' if claim.user_facing_status.value == 'POTENTIALLY_MISLEADING' else 'unverifiable') }}">
+                <div class="claim-text">
+                    <span class="claim-status {{ 'verified' if claim.user_facing_status.value == 'LIKELY_FINE' else ('misleading' if claim.user_facing_status.value == 'POTENTIALLY_MISLEADING' else 'unverifiable') }}">
+                        {{ '✓' if claim.user_facing_status.value == 'LIKELY_FINE' else ('⚠️' if claim.user_facing_status.value == 'POTENTIALLY_MISLEADING' else '?') }}
+                        {{ claim.user_facing_status.value.replace('_', ' ') }}
+                    </span>
+                    {{ claim.claim.original_text }}
+                </div>
+
+                {% if claim.user_facing_status.value != 'LIKELY_FINE' %}
+                <div class="claim-correction">
+                    {% if claim.correction %}
+                        → {{ claim.correction }}
+                    {% else %}
+                        → {{ claim.explanation }}
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <div style="margin-top: 8px; font-size: 11px; color: var(--text-muted);">
+                    Confidence: {{ (claim.confidence * 100) | round(0) }}% |
+                    Evidence: {{ claim.evidence | length }} sources
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+
+        {% if summary.unverifiable_claims %}
+        <div class="card">
+            <h2>Unverifiable Claims</h2>
+            <p class="text-muted">The following claims could not be verified against our database.</p>
+
+            {% for claim in summary.unverifiable_claims %}
+            <div class="claim-item unverifiable">
+                <div class="claim-text">
+                    <span class="claim-status unverifiable">?</span>
+                    {{ claim.claim.original_text }}
+                </div>
+                <div style="margin-top: 8px; color: var(--text-secondary);">
+                    {{ claim.explanation }}
+                </div>
+                {% if claim.correction %}
+                <div class="claim-correction" style="background: rgba(255, 193, 7, 0.1);">
+                    → Suggested: {{ claim.correction }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info">
+            <strong>No claims extracted from content.</strong>
+            <p style="margin-top: 8px;">The content may not contain verifiable financial claims, or the claim extraction encountered an error.</p>
+        </div>
+    {% endif %}
+</div>

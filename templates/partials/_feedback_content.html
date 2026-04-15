@@ -1,0 +1,39 @@
+<div>
+    {% if summary.feedback %}
+    {% set categories = namespace(items=[]) %}
+    {% for fb in summary.feedback %}
+    {% if fb.category not in categories.items %}
+    {% set categories.items = categories.items + [fb.category] %}
+    {% endif %}
+    {% endfor %}
+
+    {% for category in categories.items %}
+    <div class="card">
+        <h2>{{ category | title }}</h2>
+
+        {% for fb in summary.feedback %}
+        {% if fb.category == category %}
+        <div class="feedback-item">
+            <div class="feedback-category">{{ fb.category }}</div>
+            <div style="margin-top: 8px; font-size: 14px;">
+                {{ fb.issue }}
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                {{ fb.location }}
+            </div>
+            <div style="margin-top: 8px; padding: 8px; background: rgba(0, 120, 212, 0.1); border-left: 2px solid var(--accent-blue);">
+                <span style="font-size: 11px; text-transform: uppercase; color: var(--accent-blue);">Suggestion:</span>
+                {{ fb.suggestion }}
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="alert alert-info">
+        <strong>No quality issues detected.</strong> Content passed all checks.
+    </div>
+    {% endif %}
+</div>

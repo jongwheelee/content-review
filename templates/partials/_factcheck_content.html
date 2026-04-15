@@ -1,0 +1,99 @@
+<div>
+    <div class="panel">
+        <div class="panel-header">Quality Score</div>
+        <div class="panel-content">
+            <div class="score-display">
+                <div>
+                    <div class="score-main">{{ summary.quality_score.overall }}/10</div>
+                    <div class="score-label">Overall Quality</div>
+                </div>
+            </div>
+
+            <div class="score-grid">
+                <div class="score-item">
+                    <div class="score-value" style="color: var(--accent-green);">
+                        {{ summary.quality_score.factual_accuracy }}/10
+                    </div>
+                    <div class="score-item-label">Factual Accuracy</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-value" style="color: var(--accent-blue);">
+                        {{ summary.quality_score.clarity }}/10
+                    </div>
+                    <div class="score-item-label">Clarity</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-value" style="color: var(--accent-orange);">
+                        {{ summary.quality_score.completeness }}/10
+                    </div>
+                    <div class="score-item-label">Completeness</div>
+                </div>
+            </div>
+
+            {% if summary.quality_score.issue_counts and summary.quality_score.issue_counts.values() | sum > 0 %}
+            <div style="margin-top: 24px;">
+                <h3 style="margin-top: 0;">Issues Found</h3>
+                <table>
+                    <tr>
+                        <th>Category</th>
+                        <th>Count</th>
+                    </tr>
+                    {% for category, count in summary.quality_score.issue_counts.items() %}
+                    {% if count > 0 %}
+                    <tr>
+                        <td>{{ category | title }}</td>
+                        <td>{{ count }}</td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% for section in summary.sections %}
+    <div class="card">
+        <h2>{{ section.topic }}</h2>
+
+        {% for claim in section.claims %}
+        <div class="claim-item {{ 'verified' if claim.user_facing_status.value == 'LIKELY_FINE' else ('misleading' if claim.user_facing_status.value == 'POTENTIALLY_MISLEADING' else 'unverifiable') }}">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <div class="claim-text" style="flex: 1;">
+                    {{ claim.claim.original_text }}
+                </div>
+                <span class="claim-status {{ 'verified' if claim.user_facing_status.value == 'LIKELY_FINE' else ('misleading' if claim.user_facing_status.value == 'POTENTIALLY_MISLEADING' else 'unverifiable') }}">
+                    {{ claim.status.value }}
+                </span>
+            </div>
+
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
+                Type: {{ claim.claim.claim_type.value }} |
+                Confidence: {{ (claim.confidence * 100) | round(0) }}%
+            </div>
+
+            <div style="font-size: 13px; color: var(--text-secondary);">
+                <strong>Explanation:</strong> {{ claim.explanation }}
+            </div>
+
+            {% if claim.correction %}
+            <div class="claim-correction">
+                <strong>Correction:</strong> {{ claim.correction }}
+            </div>
+            {% endif %}
+
+            <div style="margin-top: 12px; font-size: 11px; color: var(--text-muted);">
+                <strong>Evidence ({{ claim.evidence | length }} sources):</strong>
+                {% for evidence in claim.evidence[:3] %}
+                <div style="margin-top: 4px; padding: 4px 8px; background: var(--bg-secondary);">
+                    [{{ evidence.source_type | upper }}] {{ evidence.source }}
+                    {% if evidence.value %}→ {{ evidence.value }}{% endif %}
+                    {% if evidence.date %}({{ evidence.date }}){% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>

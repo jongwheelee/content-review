@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <h1>ANALYSIS RESULTS</h1>
+    <div id="status-{{ job.id }}">
+        {% include "partials/_status.html" %}
+    </div>
+</div>
+
+<p class="text-muted">Job ID: <code style="font-family: var(--font-mono);">{{ job.id }}</code></p>
+<p class="text-muted">Submitted: {{ job.submitted_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+
+{% if job.status == 'completed' and job.summary %}
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" data-tab="summary-tab">Summary</button>
+        <button class="tab" data-tab="factcheck-tab">Full Fact-Check</button>
+        <button class="tab" data-tab="feedback-tab">Quality Feedback</button>
+    </div>
+
+    <!-- Summary Tab -->
+    <div id="summary-tab" class="tab-content active">
+        {% include "partials/_summary_content.html" %}
+    </div>
+
+    <!-- Fact-Check Tab -->
+    <div id="factcheck-tab" class="tab-content">
+        {% include "partials/_factcheck_content.html" %}
+    </div>
+
+    <!-- Feedback Tab -->
+    <div id="feedback-tab" class="tab-content">
+        {% include "partials/_feedback_content.html" %}
+    </div>
+
+    <!-- Export Buttons -->
+    <div style="margin-top: 32px; display: flex; gap: 12px;">
+        <button class="btn btn-secondary btn-sm" onclick="exportMarkdown()">
+            📥 Export Markdown
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="exportJSON()">
+            📥 Export JSON
+        </button>
+    </div>
+
+{% elif job.status == 'running' or job.status == 'pending' %}
+    <!-- Loading State -->
+    <div class="loading" id="loading-state"
+         hx-get="/partials/status/{{ job.id }}"
+         hx-trigger="every 2s"
+         hx-swap="outerHTML"
+         hx-on::after-swap="checkCompletion()">
+        <div class="spinner"></div>
+        <div class="loading-text">
+            {% if job.status == 'pending' %}
+                Waiting to start...
+            {% else %}
+                Analyzing content...
+            {% endif %}
+        </div>
+        <p class="text-muted" style="font-size: 12px;">
+            This typically takes 30-60 seconds
+        </p>
+    </div>
+
+    <script>
+    function checkCompletion() {
+        const statusEl = document.getElementById('status-{{ job.id }}');
+        if (statusEl) {
+            const statusText = statusEl.textContent.trim();
+            if (statusText === '✅ Completed') {
+                window.location.reload();
+            }
+        }
+    }
+    </script>
+
+{% elif job.status == 'failed' %}
+    <div class="alert alert-error">
+        <strong>Analysis Failed</strong>
+        <p style="margin-top: 8px;">{{ job.error }}</p>
+    </div>
+
+    <a href="/" class="btn">
+        ← Try Again
+    </a>
+{% endif %}
+
+<script>
+function exportMarkdown() {
+    const content = document.getElementById('summary-content').innerText;
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'fact-check-summary.md';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportJSON() {
+    fetch(`/api/results/{{ job.id }}`)
+        .then(r => r.json())
+        .then(data => {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'fact-check-results.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+}
+</script>
+{% endblock %}

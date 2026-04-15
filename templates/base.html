@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} | Fact-Check Pipeline</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        /* ============================================================
+           BLOOMBERG-INSPIRED THEME
+           ============================================================ */
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-tertiary: #1c1c1c;
+            --text-primary: #f5f5f5;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666;
+            --border-color: #333;
+            --accent-orange: #ff6b00;
+            --accent-blue: #0078d4;
+            --accent-green: #00c853;
+            --accent-red: #ff3d00;
+            --accent-yellow: #ffc107;
+            --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 14px;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* ============================================================
+           HEADER
+           ============================================================ */
+        header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 24px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--accent-orange);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            border-radius: 0; /* No rounded corners */
+        }
+
+        nav {
+            display: flex;
+            gap: 24px;
+        }
+
+        nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            padding: 8px 0;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        nav a:hover,
+        nav a.active {
+            color: var(--text-primary);
+            border-bottom-color: var(--accent-orange);
+        }
+
+        /* ============================================================
+           MAIN CONTENT
+           ============================================================ */
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        h1 {
+            font-family: var(--font-mono);
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+        }
+
+        h2 {
+            font-family: var(--font-mono);
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h3 {
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 24px;
+            margin-bottom: 12px;
+        }
+
+        p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+
+        /* ============================================================
+           FORMS
+           ============================================================ */
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 13px;
+            padding: 16px;
+            resize: vertical;
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: var(--accent-orange);
+        }
+
+        textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        /* ============================================================
+           BUTTONS
+           ============================================================ */
+        button, .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--accent-orange);
+            color: var(--text-primary);
+            border: none;
+            padding: 12px 24px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        button:hover, .btn:hover {
+            background: #ff8533;
+        }
+
+        button:disabled {
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        /* ============================================================
+           STATUS INDICATORS
+           ============================================================ */
+        .status-pending {
+            color: var(--accent-yellow);
+        }
+
+        .status-running {
+            color: var(--accent-blue);
+        }
+
+        .status-completed {
+            color: var(--accent-green);
+        }
+
+        .status-failed {
+            color: var(--accent-red);
+        }
+
+        /* ============================================================
+           CARDS & PANELS
+           ============================================================ */
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .panel-header {
+            background: var(--bg-tertiary);
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .panel-content {
+            padding: 16px;
+        }
+
+        /* ============================================================
+           TABLES
+           ============================================================ */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-mono);
+            font-size: 12px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 11px;
+        }
+
+        tr:hover {
+            background: var(--bg-secondary);
+        }
+
+        /* ============================================================
+           CLAIM STYLES
+           ============================================================ */
+        .claim-item {
+            background: var(--bg-tertiary);
+            border-left: 3px solid var(--border-color);
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .claim-item.verified {
+            border-left-color: var(--accent-green);
+        }
+
+        .claim-item.misleading {
+            border-left-color: var(--accent-red);
+        }
+
+        .claim-item.unverifiable {
+            border-left-color: var(--accent-yellow);
+        }
+
+        .claim-status {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            margin-right: 8px;
+        }
+
+        .claim-status.verified {
+            background: var(--accent-green);
+            color: #000;
+        }
+
+        .claim-status.misleading {
+            background: var(--accent-red);
+            color: #fff;
+        }
+
+        .claim-status.unverifiable {
+            background: var(--accent-yellow);
+            color: #000;
+        }
+
+        .claim-text {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .claim-correction {
+            color: var(--accent-orange);
+            font-family: var(--font-mono);
+            font-size: 13px;
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(255, 107, 0, 0.1);
+        }
+
+        /* ============================================================
+           FEEDBACK STYLES
+           ============================================================ */
+        .feedback-item {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 8px;
+        }
+
+        .feedback-category {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--accent-orange);
+        }
+
+        /* ============================================================
+           SCORE DISPLAY
+           ============================================================ */
+        .score-display {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .score-main {
+            font-family: var(--font-mono);
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--accent-orange);
+        }
+
+        .score-label {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .score-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .score-item {
+            background: var(--bg-tertiary);
+            padding: 16px;
+            text-align: center;
+        }
+
+        .score-value {
+            font-family: var(--font-mono);
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .score-item-label {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* ============================================================
+           LOADING STATES
+           ============================================================ */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 48px;
+            gap: 16px;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-orange);
+            border-radius: 0;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-family: var(--font-mono);
+            color: var(--text-secondary);
+        }
+
+        /* ============================================================
+           UTILITIES
+           ============================================================ */
+        .text-muted {
+            color: var(--text-muted);
+        }
+
+        .mt-4 {
+            margin-top: 16px;
+        }
+
+        .mb-4 {
+            margin-bottom: 16px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* ============================================================
+           TABS
+           ============================================================ */
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            color: var(--text-primary);
+            border-bottom-color: var(--accent-orange);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ============================================================
+           ALERTS
+           ============================================================ */
+        .alert {
+            padding: 16px;
+            border: 1px solid;
+            margin-bottom: 24px;
+        }
+
+        .alert-error {
+            background: rgba(255, 61, 0, 0.1);
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .alert-info {
+            background: rgba(0, 120, 212, 0.1);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <div class="brand-icon">FC</div>
+            <span>FACT-CHECK PIPELINE</span>
+        </div>
+        <nav>
+            <a href="/" {% if request.url.path == '/' %}class="active"{% endif %}>Analyze</a>
+            <a href="/history" {% if request.url.path == '/history' %}class="active"{% endif %}>History</a>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabId = this.dataset.tab;
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        // Auto-refresh status for pending jobs
+        function refreshStatus(jobId) {
+            const statusEl = document.getElementById(`status-${jobId}`);
+            if (statusEl) {
+                htmx.ajax('GET', `/partials/status/${jobId}`, {
+                    target: `#status-${jobId}`,
+                    swap: 'innerHTML'
+                });
+            }
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

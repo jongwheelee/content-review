@@ -1,0 +1,6 @@
+<span class="{{ status_class }}" style="font-family: var(--font-mono); font-size: 13px;">
+    {{ status_icon }} {{ job.status | title }}
+    {% if job.completed_at %}
+        at {{ job.completed_at.strftime('%H:%M:%S') }}
+    {% endif %}
+</span>

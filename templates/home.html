@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>ANALYZE CONTENT</h1>
+<p class="text-muted">Paste financial content below to fact-check claims and generate a corrected summary.</p>
+
+<div class="card" style="margin-bottom: 24px;">
+    <div class="form-group">
+        <label for="api-key">Anthropic API Key</label>
+        <input type="password"
+               id="api-key"
+               name="api_key"
+               placeholder="sk-ant-..."
+               style="width: 100%; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); font-family: var(--font-mono); font-size: 13px; padding: 12px;"
+               onchange="localStorage.setItem('anthropic_api_key', this.value)" />
+        <p class="text-muted" style="font-size: 11px; margin-top: 8px;">
+            Your API key is stored locally in your browser. Get one at <a href="https://console.anthropic.com" target="_blank" style="color: var(--accent-orange);">console.anthropic.com</a>
+        </p>
+    </div>
+</div>
+
+<form id="analyze-form"
+      hx-post="/api/analyze"
+      hx-swap="none"
+      hx-on::after-request="handleAfterRequest(event)"
+      class="mt-4">
+
+    <div class="form-group">
+        <label for="content">Content</label>
+        <textarea
+            id="content"
+            name="content"
+            placeholder="Paste your financial content here...
+
+Example:
+The Federal Reserve raised interest rates by 75 basis points in 2024,
+bringing the federal funds rate to 8.5%. This was driven by inflation
+which hit a 40-year high of 12% last month. Apple reported revenue of
+$500 billion in their most recent quarter..."
+            required
+        ></textarea>
+    </div>
+
+    <div style="display: flex; gap: 12px; align-items: center;">
+        <button type="submit" id="submit-btn">
+            <span>🔍</span>
+            <span>Fact-Check & Summarize</span>
+        </button>
+        <span id="form-status" class="text-muted" style="display: none;"></span>
+    </div>
+</form>
+
+<div id="result-redirect" class="hidden" style="margin-top: 32px;">
+    <div class="alert alert-info">
+        <strong>Analysis started!</strong> Redirecting to results...
+    </div>
+</div>
+
+<script>
+// Load saved API key on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedKey = localStorage.getItem('anthropic_api_key');
+    if (savedKey) {
+        document.getElementById('api-key').value = savedKey;
+    }
+});
+
+function handleAfterRequest(event) {
+    const btn = document.getElementById('submit-btn');
+    const status = document.getElementById('form-status');
+    const redirect = document.getElementById('result-redirect');
+
+    try {
+        const response = JSON.parse(event.detail.xhr.responseText);
+
+        if (response.job_id) {
+            // Show redirect message
+            redirect.classList.remove('hidden');
+
+            // Redirect to results page
+            setTimeout(() => {
+                window.location.href = `/analysis/${response.job_id}`;
+            }, 1000);
+        }
+    } catch (e) {
+        status.textContent = 'Error submitting analysis. Please try again.';
+        status.style.display = 'inline';
+        status.style.color = 'var(--accent-red)';
+        btn.disabled = false;
+    }
+}
+
+// Disable button during submission and attach API key
+document.getElementById('analyze-form').addEventListener('htmx:beforeRequest', function(evt) {
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;"></span> Processing...';
+
+    // Attach API key to the request
+    const apiKey = document.getElementById('api-key').value;
+    if (apiKey) {
+        localStorage.setItem('anthropic_api_key', apiKey);
+        evt.detail.requestConfig.parameters.api_key = apiKey;
+    }
+});
+</script>
+{% endblock %}
